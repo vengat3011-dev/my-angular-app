@@ -10,13 +10,6 @@ pipeline {
             }
         }
 
-        stage('Check Node') {
-            steps {
-                bat 'node -v'
-                bat 'npm -v'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 bat 'npm ci'
@@ -29,21 +22,29 @@ pipeline {
             }
         }
 
-        stage('Archive Build') {
+        stage('Docker Build') {
             steps {
-                archiveArtifacts artifacts: 'dist/**/*',
-                                 fingerprint: true
+                bat 'docker build -t angular-app:latest .'
+            }
+        }
+
+        stage('Docker Deploy') {
+            steps {
+                bat '''
+                docker rm -f angular-container 2>NUL
+                docker run -d --name angular-container -p 8081:80 angular-app:latest
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Angular Build Successful!'
+            echo 'Angular Docker Deployment Successful!'
         }
 
         failure {
-            echo 'Angular Build Failed!'
+            echo 'Build or Deployment Failed!'
         }
     }
 }
